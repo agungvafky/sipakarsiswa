@@ -1,0 +1,127 @@
+<?php
+
+include('../../lib/koneksi.php');
+require_once("../../dompdf/dompdf_config.inc.php");
+
+function tgl_indo($tanggal){
+  $bulan = array (
+    1 =>   'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember'
+  );
+  $pecahkan = explode('-', $tanggal);
+  
+  // variabel pecahkan 0 = tanggal
+  // variabel pecahkan 1 = bulan
+  // variabel pecahkan 2 = tahun
+ 
+  return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+}
+
+ $nis=$_GET['nis'];
+
+$query = mysqli_query($connect,"SELECT a.*, b.*, c.nama_pelanggaran, c.poin, SUM(c.poin) as jml FROM siswa a join detail_poin b on a.nis=b.nis join pelanggaran c on b.id_pelanggaran=c.id_pelanggaran WHERE a.nis='$nis' group by id_detail_poin order by c.poin desc");
+$queryi = mysqli_query($connect,"SELECT a.*, b.*, c.nama_pelanggaran, c.poin, SUM(c.poin) as jml FROM siswa a join detail_poin b on a.nis=b.nis join pelanggaran c on b.id_pelanggaran=c.id_pelanggaran WHERE a.nis='$nis' group by id_detail_poin order by c.poin desc");
+
+$querya = mysqli_query($connect,"SELECT  SUM(c.poin) as jml FROM siswa a join detail_poin b on a.nis=b.nis join pelanggaran c on b.id_pelanggaran=c.id_pelanggaran WHERE a.nis='$nis' ");
+$rowa = mysqli_fetch_array($querya);
+$rowy = mysqli_fetch_array($queryi);
+
+
+$html = ' <html>
+
+<head>
+<style>
+@page { margin: 2cm 2cm 2cm 3cm; }
+.style1{
+  font-size: 21px;
+  font-family:Arial;
+}
+</style>
+</head>
+<body>
+<table border="0" style="width: 100%" cellspacing="0" cellpadding="0">
+   
+  
+    <tr>
+
+      <th align="center" width="60"><img src="../../images/smk.jpg" width="80" height="90"></th>
+      <td colspan="7"><center><div class="style1"><b>PEMERINTAH PROVINSI SUMATERA BARAT</b></div></center></b>
+        <center><font size="17px" face="Arial"><b>SMK NEGERI 1 AMPEK ANGKEK</b></font></center>
+        
+      <center><font size="8.5px">Alamat: Jl.Panca Batu Taba, Kec.Ampek Angkek, Kab.Agam Telp./Fax(0752) 7834358 kode Pos 26191 E-mail : smikagam@ymail.com</font></center></td>
+     
+      
+    <tr>
+  </table>
+  <hr>
+<center><h3><u>Laporan Pelanggaran</u></center> 
+  
+  ';
+
+  
+$html .= '<center>
+<table border="0"  cellpadding="4" cellspacing="0">
+       <tr>
+          <td>Nama</td>
+          <td>: '.$rowy['nama_siswa'].'</td> 
+        </tr>
+        <tr>
+          <td>NIS</td>
+          <td>: '.$rowy['nis'].'</td> 
+        </tr>
+        </table>
+        
+<br>
+      <table border="1" width="100%" cellpadding="4" cellspacing="0">
+       <tr>
+          <th>No</th>
+          <th>Nama Pelanggaran</th>
+          <th>Poin</th>
+         
+        </tr>';
+
+        $nok=1;
+         while($row = mysqli_fetch_array($query))
+         {
+           $html .='<tr>
+            <td align="center">'.$nok.'</td>
+            <td>'.$row['nama_pelanggaran'].'</td>
+            <td>'.$row['poin'].'</td>
+           
+           
+        </tr>';
+        $nok++;
+      }
+
+      $html .='<tr>
+      <td colspan="2">Jumlah</td>
+      <td >'.$rowa['jml'].'</td>
+      </tr>';
+
+     $html .='</table> </body>
+        ';
+
+        
+   
+$dompdf = new Dompdf();
+$html .= '</html>';
+
+$dompdf->load_Html($html);
+// Setting ukuran dan orientasi kertas
+$dompdf->set_Paper('A4', 'potrait');
+// Rendering dari HTML Ke PDF
+$dompdf->render();
+// Melakukan output file Pdf
+$dompdf->stream('Absensi.pdf', array("Attachment"=>0));
+
+?>
